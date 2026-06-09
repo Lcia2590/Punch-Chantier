@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111827">
+<title>Punch Chantier</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #111827;
+    --bg2: #1f2937;
+    --bg3: #374151;
+    --border: #374151;
+    --text: #f9fafb;
+    --muted: #9ca3af;
+    --accent: #f59e0b;
+    --accent2: #d97706;
+    --green: #10b981;
+    --green-bg: #064e3b;
+    --red: #ef4444;
+    --red-bg: #7f1d1d;
+    --blue: #3b82f6;
+    --blue-bg: #1e3a5f;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  /* NAV */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 16px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; color: var(--accent); }
+  .nav-logo svg { width: 22px; height: 22px; fill: var(--accent); }
+  .nav-btn { background: var(--bg3); border: none; color: var(--muted); font-size: 13px; padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; }
+  .nav-btn:hover { color: var(--text); }
+
+  /* PAGES */
+  .page { display: none; padding: 72px 16px 32px; min-height: 100vh; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+  .card-title { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+  /* FORMS */
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+  select, input[type=text], input[type=time], input[type=date], textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius-sm); padding: 11px 14px; font-size: 15px; appearance: none; outline: none;
+  }
+  select:focus, input:focus, textarea:focus { border-color: var(--accent); }
+  .field { margin-bottom: 14px; }
+
+  /* BUTTONS */
+  .btn { width: 100%; padding: 15px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .btn-in  { background: var(--green); color: #fff; }
+  .btn-out { background: var(--red);   color: #fff; }
+  .btn-primary { background: var(--accent); color: #111; }
+  .btn-ghost { background: var(--bg3); color: var(--text); }
+  .btn-sm { padding: 8px 14px; font-size: 13px; width: auto; border-radius: var(--radius-sm); }
+  .btn-danger { background: var(--red-bg); color: var(--red); }
+
+  /* CLOCK */
+  .clock-big { text-align: center; padding: 8px 0 20px; }
+  .clock-big .time { font-size: 52px; font-weight: 700; letter-spacing: -2px; color: var(--text); font-variant-numeric: tabular-nums; }
+  .clock-big .date-str { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+  /* STATUS */
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 5px 12px; border-radius: 20px; }
+  .status-pill.in  { background: var(--green-bg); color: var(--green); }
+  .status-pill.out { background: var(--bg3); color: var(--muted); }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .dot-out { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+
+  /* MAP LINK */
+  .map-link { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--blue-bg); border: 1px solid #1e40af; border-radius: var(--radius-sm); color: #93c5fd; font-size: 13px; text-decoration: none; margin-top: 10px; }
+  .map-link svg { width: 16px; height: 16px; fill: #93c5fd; flex-shrink: 0; }
+
+  /* ENTRY ROWS */
+  .entry { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .entry:last-child { border-bottom: none; }
+  .entry-left .name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .entry-left .detail { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .entry-right { text-align: right; flex-shrink: 0; }
+  .entry-right .hrs { font-size: 15px; font-weight: 700; color: var(--accent); }
+  .entry-right .tag { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--bg3); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 16px; }
+  .tab { flex: 1; padding: 9px; text-align: center; font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer; color: var(--muted); border: none; background: none; }
+  .tab.active { background: var(--bg2); color: var(--text); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border-radius: var(--radius) var(--radius) 0 0; padding: 24px 20px 40px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { background: var(--bg3); border: none; color: var(--muted); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+  .stat-val { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* BADGE */
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: #451a03; color: var(--accent); }
+  .badge-red   { background: var(--red-bg); color: var(--red); }
+
+  /* ADMIN ROW */
+  .emp-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .emp-row:last-child { border-bottom: none; }
+  .emp-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+  .emp-info { flex: 1; margin: 0 12px; }
+  .emp-info .emp-name { font-size: 14px; font-weight: 600; }
+  .emp-info .emp-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; font-size: 14px; z-index: 999; transition: transform .3s; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* MISC */
+  .section-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+  .empty { text-align: center; padding: 32px 0; color: var(--muted); font-size: 14px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+  .text-right { text-align: right; }
+  .text-muted { color: var(--muted); font-size: 13px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .total-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; margin-top: 4px; border-top: 1px solid var(--border); }
+  .total-bar span { font-size: 13px; color: var(--muted); }
+  .total-bar strong { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">
+    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+    Punch Chantier
+  </div>
+  <button class="nav-btn" id="navToggle" onclick="toggleAdmin()">Admin ↗</button>
+</nav>
+
+<!-- ==================== PAGE EMPLOYÉ ==================== -->
+<div class="page active" id="pageEmp">
+
+  <div class="clock-big">
+    <div class="time" id="clockDisp">00:00:00</div>
+    <div class="date-str" id="dateDisp"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Identification</div>
+    <div class="field">
+      <label>Ton nom</label>
+      <select id="empSelect" onchange="onEmpChange()">
+        <option value="">— Choisir ton nom —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Chantier</label>
+      <select id="chanSelect" onchange="onChanChange()">
+        <option value="">— Choisir le chantier —</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card" id="statusCard" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Statut</div>
+      <span id="statusPill" class="status-pill out"><span class="dot-out"></span> Pas poinçonné</span>
+    </div>
+    <div id="punchInfo" style="font-size:13px;color:var(--muted);min-height:18px;margin-bottom:16px"></div>
+    <button class="btn btn-in" id="punchBtn" onclick="doPunch()">
+      <span id="punchBtnIcon">▶</span>
+      <span id="punchBtnLabel">Pointer l'arrivée</span>
+    </button>
+    <div id="mapLinkWrap"></div>
+  </div>
+
+  <div class="card" id="todayCard">
+    <div class="card-title">Ma journée</div>
+    <div id="todayList"><div class="empty">Aucune entrée aujourd'hui</div></div>
+    <div class="total-bar">
+      <span>Mes heures aujourd'hui</span>
+      <strong id="todayTotal">0h00</strong>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== PAGE ADMIN ==================== -->
+<div class="page" id="pageAdmin">
+
+  <div id="adminLock" style="padding:40px 0;text-align:center">
+    <div style="font-size:40px;margin-bottom:16px">🔒</div>
+    <div style="font-size:17px;font-weight:600;margin-bottom:8px">Accès admin</div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:24px">Entre le code pour continuer</div>
+    <input type="text" id="pinInput" placeholder="Code PIN" maxlength="6" style="text-align:center;letter-spacing:.2em;font-size:20px;max-width:200px;margin:0 auto 16px;display:block">
+    <button class="btn btn-primary" style="max-width:200px;margin:0 auto" onclick="unlockAdmin()">Entrer</button>
+    <div id="pinError" style="color:var(--red);font-size:13px;margin-top:10px;min-height:18px"></div>
+  </div>
+
+  <div id="adminContent" style="display:none">
+    <div class="tabs">
+      <button class="tab active" onclick="adminTab(0)">Aujourd'hui</button>
+      <button class="tab" onclick="adminTab(1)">Historique</button>
+      <button class="tab" onclick="adminTab(2)">Équipe</button>
+      <button class="tab" onclick="adminTab(3)">Chantiers</button>
+    </div>
+
+    <!-- TAB 0: Aujourd'hui -->
+    <div id="adminTab0">
+      <div class="stats-grid" id="adminStats"></div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="card-title" style="margin:0">Pointages du jour</div>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
+        </div>
+        <div id="adminTodayList"><div class="empty">Chargement…</div></div>
+      </div>
+    </div>
+
+    <!-- TAB 1: Historique -->
+    <div id="adminTab1" style="display:none">
+      <div class="card">
+        <div class="row">
+          <div class="field">
+            <label>Employé</label>
+            <select id="histEmp" onchange="loadHistory()">
+              <option value="">Tous</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Semaine</label>
+            <input type="date" id="histDate" onchange="loadHistory()">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="card-title" style="margin:0">Résultats</div>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSVHist()">⬇ CSV</button>
+        </div>
+        <div id="histList"><div class="empty">Sélectionne une période</div></div>
+        <div class="total-bar">
+          <span>Total</span>
+          <strong id="histTotal">0h00</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Équipe -->
+    <div id="adminTab2" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="card-title" style="margin:0">Employés</div>
+          <button class="btn btn-primary btn-sm" onclick="openModalEmp(null)">+ Ajouter</button>
+        </div>
+        <div id="empList"><div class="empty">Chargement…</div></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Chantiers -->
+    <div id="adminTab3" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="card-title" style="margin:0">Chantiers actifs</div>
+          <button class="btn btn-primary btn-sm" onclick="openModalChan(null)">+ Ajouter</button>
+        </div>
+        <div id="chanList"><div class="empty">Chargement…</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Modal: Modifier punch -->
+<div class="modal-overlay" id="modalPunch">
+  <div class="modal">
+    <div class="modal-title">
+      Modifier le pointage
+      <button class="modal-close" onclick="closeModal('modalPunch')">✕</button>
+    </div>
+    <input type="hidden" id="editPunchId">
+    <div class="field">
+      <label>Employé</label>
+      <select id="editPunchEmp"></select>
+    </div>
+    <div class="field">
+      <label>Chantier</label>
+      <select id="editPunchChan"></select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="editPunchDate">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Arrivée</label>
+        <input type="time" id="editPunchIn">
+      </div>
+      <div class="field">
+        <label>Départ</label>
+        <input type="time" id="editPunchOut">
+      </div>
+    </div>
+    <div class="field">
+      <label>Note (optionnel)</label>
+      <textarea id="editPunchNote" rows="2" placeholder="Raison de la modification…" style="resize:none"></textarea>
+    </div>
+    <button class="btn btn-primary mt-16" onclick="savePunch()">Sauvegarder</button>
+    <button class="btn btn-danger mt-8" onclick="deletePunch()">Supprimer ce pointage</button>
+  </div>
+</div>
+
+<!-- Modal: Employé -->
+<div class="modal-overlay" id="modalEmp">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modalEmpTitle">Nouvel employé</span>
+      <button class="modal-close" onclick="closeModal('modalEmp')">✕</button>
+    </div>
+    <input type="hidden" id="editEmpId">
+    <div class="field">
+      <label>Nom complet</label>
+      <input type="text" id="editEmpNom" placeholder="Ex: Jean-François Tremblay">
+    </div>
+    <div class="field">
+      <label>Téléphone (optionnel)</label>
+      <input type="text" id="editEmpTel" placeholder="514-555-0000">
+    </div>
+    <button class="btn btn-primary mt-16" onclick="saveEmp()">Sauvegarder</button>
+    <button class="btn btn-danger mt-8" id="deactivateEmpBtn" onclick="deactivateEmp()" style="display:none">Désactiver cet employé</button>
+  </div>
+</div>
+
+<!-- Modal: Chantier -->
+<div class="modal-overlay" id="modalChan">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modalChanTitle">Nouveau chantier</span>
+      <button class="modal-close" onclick="closeModal('modalChan')">✕</button>
+    </div>
+    <input type="hidden" id="editChanId">
+    <div class="field">
+      <label>Nom du chantier</label>
+      <input type="text" id="editChanNom" placeholder="Ex: 123 rue Exemple">
+    </div>
+    <div class="field">
+      <label>Adresse complète</label>
+      <input type="text" id="editChanAdresse" placeholder="Ex: 123 rue Exemple, Montréal">
+    </div>
+    <button class="btn btn-primary mt-16" onclick="saveChan()">Sauvegarder</button>
+    <button class="btn btn-danger mt-8" id="deactivateChanBtn" onclick="deactivateChan()" style="display:none">Désactiver ce chantier</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==========================================
+// CONFIG — remplace avec tes vraies valeurs
+// ==========================================
+const SUPABASE_URL = 'https://ikbcdnxpopczbwiuxckk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_MzSrx1w1GJws683vcG-_jg_5AQBrwnE';
+const ADMIN_PIN    = '1234'; // Change ce PIN!
+
+// ==========================================
+// API SUPABASE
+// ==========================================
+async function sb(path, method='GET', body=null) {
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : 'return=representation'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+  if (!r.ok) { const e = await r.text(); throw new Error(e); }
+  const txt = await r.text();
+  return txt ? JSON.parse(txt) : [];
+}
+
+// ==========================================
+// STATE
+// ==========================================
+let employes = [], chantiers = [], activeSession = null;
+let adminUnlocked = false;
+let historyData = [];
+
+// ==========================================
+// CLOCK
+// ==========================================
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clockDisp').textContent = n.toLocaleTimeString('fr-CA');
+  document.getElementById('dateDisp').textContent = n.toLocaleDateString('fr-CA', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ==========================================
+// INIT
+// ==========================================
+async function init() {
+  try {
+    [employes, chantiers] = await Promise.all([
+      sb('employes?actif=eq.true&order=nom'),
+      sb('chantiers?actif=eq.true&order=nom')
+    ]);
+    populateSelects();
+    loadSession();
+    refreshTodayEmp();
+  } catch(e) { showToast('Erreur de connexion: ' + e.message); }
+}
+
+function populateSelects() {
+  const es = document.getElementById('empSelect');
+  const cs = document.getElementById('chanSelect');
+  employes.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.nom; es.appendChild(o);
+  });
+  chantiers.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.nom; cs.appendChild(o);
+  });
+}
+
+// ==========================================
+// SESSION LOCALE (survit rechargement)
+// ==========================================
+function loadSession() {
+  const s = localStorage.getItem('punchSession');
+  if (s) {
+    activeSession = JSON.parse(s);
+    const emp = document.getElementById('empSelect');
+    const chan = document.getElementById('chanSelect');
+    emp.value = activeSession.empId;
+    chan.value = activeSession.chanId;
+    updatePunchUI();
+  }
+}
+
+function saveSession() {
+  if (activeSession) localStorage.setItem('punchSession', JSON.stringify(activeSession));
+  else localStorage.removeItem('punchSession');
+}
+
+// ==========================================
+// EMPLOYEE VIEW
+// ==========================================
+function onEmpChange() { updatePunchUI(); refreshTodayEmp(); }
+function onChanChange() { updatePunchUI(); }
+
+function updatePunchUI() {
+  const empId = document.getElementById('empSelect').value;
+  const chanId = document.getElementById('chanSelect').value;
+  const card = document.getElementById('statusCard');
+  const pill = document.getElementById('statusPill');
+  const info = document.getElementById('punchInfo');
+  const btn  = document.getElementById('punchBtn');
+  const icon = document.getElementById('punchBtnIcon');
+  const lbl  = document.getElementById('punchBtnLabel');
+  const mapW = document.getElementById('mapLinkWrap');
+
+  if (!empId) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  if (activeSession && activeSession.empId === empId) {
+    pill.className = 'status-pill in';
+    pill.innerHTML = '<span class="pulse"></span> En chantier';
+    const inT = new Date(activeSession.punchIn);
+    const chan = chantiers.find(c => c.id === activeSession.chanId);
+    info.textContent = 'Arrivée ' + fmt(inT) + ' · ' + (chan ? chan.nom : '');
+    btn.className = 'btn btn-out'; icon.textContent = '■'; lbl.textContent = 'Pointer la sortie';
+    btn.disabled = false;
+    if (activeSession.latIn && activeSession.lngIn) {
+      mapW.innerHTML = `<a class="map-link" href="https://maps.google.com/?q=${activeSession.latIn},${activeSession.lngIn}" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        Voir position d'arrivée sur Google Maps</a>`;
+    } else mapW.innerHTML = '';
+  } else {
+    pill.className = 'status-pill out';
+    pill.innerHTML = '<span class="dot-out"></span> Pas poinçonné';
+    info.textContent = '';
+    btn.className = 'btn btn-in'; icon.textContent = '▶'; lbl.textContent = 'Pointer l\'arrivée';
+    btn.disabled = !chanId;
+    mapW.innerHTML = '';
+  }
+}
+
+async function doPunch() {
+  const empId  = document.getElementById('empSelect').value;
+  const chanId = document.getElementById('chanSelect').value;
+  const btn    = document.getElementById('punchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const pos = await getGPS();
+    const lat = pos ? pos.coords.latitude  : null;
+    const lng = pos ? pos.coords.longitude : null;
+    const now = new Date().toISOString();
+
+    if (activeSession && activeSession.empId === empId) {
+      // PUNCH OUT
+      await sb('punches?id=eq.' + activeSession.punchId, 'PATCH', {
+        punch_out: now,
+        lat_out: lat,
+        lng_out: lng
+      });
+      activeSession = null;
+      saveSession();
+      showToast('✅ Départ enregistré!');
+    } else {
+      // PUNCH IN
+      const rows = await sb('punches', 'POST', {
+        employe_id: empId,
+        chantier_id: chanId,
+        punch_in: now,
+        lat_in: lat,
+        lng_in: lng
+      });
+      const row = Array.isArray(rows) ? rows[0] : rows;
+      activeSession = { empId, chanId, punchIn: now, punchId: row.id, latIn: lat, lngIn: lng };
+      saveSession();
+      showToast('✅ Arrivée enregistrée!');
+    }
+
+    refreshTodayEmp();
+  } catch(e) {
+    showToast('Erreur: ' + e.message);
+  }
+
+  updatePunchUI();
+}
+
+async function getGPS() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    const timer = setTimeout(() => resolve(null), 5000);
+    navigator.geolocation.getCurrentPosition(
+      pos => { clearTimeout(timer); resolve(pos); },
+      ()  => { clearTimeout(timer); resolve(null); },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  });
+}
+
+async function refreshTodayEmp() {
+  const empId = document.getElementById('empSelect').value;
+  if (!empId) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await sb(`punches?employe_id=eq.${empId}&punch_in=gte.${today}T00:00:00&order=punch_in.desc&select=*,chantiers(nom)`).catch(()=>[]);
+  const list = document.getElementById('todayList');
+  if (!rows.length) { list.innerHTML = '<div class="empty">Aucune entrée aujourd\'hui</div>'; document.getElementById('todayTotal').textContent = '0h00'; return; }
+  let total = 0;
+  list.innerHTML = rows.map(r => {
+    const ms = r.punch_out ? new Date(r.punch_out) - new Date(r.punch_in) : Date.now() - new Date(r.punch_in);
+    total += r.punch_out ? ms : 0;
+    const tag = r.punch_out ? fmtMs(ms) : '<span class="badge badge-green">En cours</span>';
+    return `<div class="entry">
+      <div class="entry-left">
+        <div class="name">${r.chantiers?.nom || '—'}</div>
+        <div class="detail">${fmt(new Date(r.punch_in))} → ${r.punch_out ? fmt(new Date(r.punch_out)) : 'en cours'}</div>
+      </div>
+      <div class="entry-right"><div class="hrs">${tag}</div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('todayTotal').textContent = fmtMs(total);
+}
+
+// ==========================================
+// ADMIN
+// ==========================================
+function toggleAdmin() {
+  const isAdmin = document.getElementById('pageAdmin').classList.contains('active');
+  document.getElementById('pageEmp').classList.toggle('active', isAdmin);
+  document.getElementById('pageAdmin').classList.toggle('active', !isAdmin);
+  document.getElementById('navToggle').textContent = isAdmin ? 'Admin ↗' : '← Retour';
+  if (!isAdmin && !adminUnlocked) { /* show lock */ }
+  if (!isAdmin && adminUnlocked) loadAdminToday();
+}
+
+function unlockAdmin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  if (pin === ADMIN_PIN) {
+    adminUnlocked = true;
+    document.getElementById('adminLock').style.display = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+    loadAdminData();
+  } else {
+    document.getElementById('pinError').textContent = 'Code incorrect';
+    setTimeout(() => document.getElementById('pinError').textContent = '', 2000);
+  }
+}
+
+function adminTab(n) {
+  [0,1,2,3].forEach(i => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', i === n);
+    document.getElementById('adminTab' + i).style.display = i === n ? 'block' : 'none';
+  });
+  if (n === 0) loadAdminToday();
+  if (n === 1) { loadHistoryEmps(); setTodayDate(); }
+  if (n === 2) loadAdminEmps();
+  if (n === 3) loadAdminChans();
+}
+
+async function loadAdminData() {
+  await Promise.all([
+    sb('employes?actif=eq.true&order=nom').then(r => { employes = r; }),
+    sb('chantiers?actif=eq.true&order=nom').then(r => { chantiers = r; })
+  ]);
+  loadAdminToday();
+}
+
+async function loadAdminToday() {
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = await sb(`punches?punch_in=gte.${today}T00:00:00&order=punch_in.desc&select=*,employes(nom),chantiers(nom)`).catch(()=>[]);
+
+  // Stats
+  const active = rows.filter(r => !r.punch_out).length;
+  const done   = rows.filter(r =>  r.punch_out).length;
+  let totalMs  = 0;
+  rows.filter(r => r.punch_out).forEach(r => totalMs += new Date(r.punch_out) - new Date(r.punch_in));
+  document.getElementById('adminStats').innerHTML = `
+    <div class="stat"><div class="stat-val">${active}</div><div class="stat-lbl">Sur le chantier</div></div>
+    <div class="stat"><div class="stat-val">${done}</div><div class="stat-lbl">Pointages complétés</div></div>
+    <div class="stat"><div class="stat-val">${fmtMs(totalMs)}</div><div class="stat-lbl">Heures cumulées</div></div>
+    <div class="stat"><div class="stat-val">${rows.length}</div><div class="stat-lbl">Entrées totales</div></div>`;
+
+  const list = document.getElementById('adminTodayList');
+  if (!rows.length) { list.innerHTML = '<div class="empty">Aucun pointage aujourd\'hui</div>'; return; }
+  list.innerHTML = rows.map(r => punchRow(r)).join('');
+}
+
+function punchRow(r) {
+  const ms = r.punch_out ? new Date(r.punch_out) - new Date(r.punch_in) : null;
+  const mapIn  = r.lat_in  ? `<a class="map-link" style="margin-top:6px;font-size:11px;padding:6px 10px" href="https://maps.google.com/?q=${r.lat_in},${r.lng_in}"   target="_blank"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:#93c5fd"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Arrivée</a>` : '';
+  const mapOut = r.lat_out ? `<a class="map-link" style="margin-top:4px;font-size:11px;padding:6px 10px" href="https://maps.google.com/?q=${r.lat_out},${r.lng_out}" target="_blank"><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:#93c5fd"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Départ</a>` : '';
+  const modBadge = r.modifie_par_admin ? '<span class="badge badge-amber" style="margin-left:6px">Modifié</span>' : '';
+  return `<div class="entry" style="flex-direction:column;align-items:flex-start">
+    <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+      <div>
+        <div class="entry-left">
+          <div class="name">${r.employes?.nom || '—'} ${modBadge}</div>
+          <div class="detail">${r.chantiers?.nom || '—'}</div>
+          <div class="detail">${fmt(new Date(r.punch_in))} → ${r.punch_out ? fmt(new Date(r.punch_out)) : '<span class="badge badge-green">En cours</span>'}</div>
+          ${r.note ? `<div class="detail" style="color:var(--accent);font-style:italic">Note: ${r.note}</div>` : ''}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="hrs" style="font-size:16px;font-weight:700;color:var(--accent)">${ms ? fmtMs(ms) : '—'}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick='openModalPunch(${JSON.stringify(r)})'>✏ Modifier</button>
+      </div>
+    </div>
+    <div style="width:100%">${mapIn}${mapOut}</div>
+  </div>`;
+}
+
+// Historique
+function setTodayDate() {
+  const d = new Date().toISOString().slice(0,10);
+  document.getElementById('histDate').value = d;
+}
+
+function loadHistoryEmps() {
+  const sel = document.getElementById('histEmp');
+  sel.innerHTML = '<option value="">Tous</option>';
+  employes.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.nom; sel.appendChild(o); });
+}
+
+async function loadHistory() {
+  const empId = document.getElementById('histEmp').value;
+  const dateV = document.getElementById('histDate').value;
+  if (!dateV) return;
+
+  const monday = getMonday(new Date(dateV));
+  const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+  const from = monday.toISOString().slice(0,10) + 'T00:00:00';
+  const to   = sunday.toISOString().slice(0,10) + 'T23:59:59';
+
+  let url = `punches?punch_in=gte.${from}&punch_in=lte.${to}&order=punch_in.desc&select=*,employes(nom),chantiers(nom)`;
+  if (empId) url += `&employe_id=eq.${empId}`;
+
+  historyData = await sb(url).catch(()=>[]);
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('histList');
+  if (!historyData.length) { list.innerHTML = '<div class="empty">Aucun pointage trouvé</div>'; document.getElementById('histTotal').textContent = '0h00'; return; }
+  let total = 0;
+  list.innerHTML = historyData.map(r => {
+    const ms = r.punch_out ? new Date(r.punch_out) - new Date(r.punch_in) : 0;
+    total += ms;
+    return punchRow(r);
+  }).join('');
+  document.getElementById('histTotal').textContent = fmtMs(total);
+}
+
+function getMonday(d) {
+  const day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+
+// Équipe
+async function loadAdminEmps() {
+  const rows = await sb('employes?order=nom').catch(()=>[]);
+  const list = document.getElementById('empList');
+  if (!rows.length) { list.innerHTML = '<div class="empty">Aucun employé</div>'; return; }
+  list.innerHTML = rows.map(e => `
+    <div class="emp-row">
+      <div class="emp-avatar">${e.nom.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
+      <div class="emp-info">
+        <div class="emp-name">${e.nom}</div>
+        <div class="emp-sub">${e.telephone || 'Pas de téléphone'} · <span class="${e.actif ? 'badge badge-green' : 'badge badge-red'}">${e.actif ? 'Actif' : 'Inactif'}</span></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick='openModalEmp(${JSON.stringify(e)})'>✏</button>
+    </div>`).join('');
+}
+
+// Chantiers
+async function loadAdminChans() {
+  const rows = await sb('chantiers?order=nom').catch(()=>[]);
+  const list = document.getElementById('chanList');
+  if (!rows.length) { list.innerHTML = '<div class="empty">Aucun chantier</div>'; return; }
+  list.innerHTML = rows.map(c => `
+    <div class="emp-row">
+      <div class="emp-avatar" style="font-size:18px;color:var(--accent)">📍</div>
+      <div class="emp-info">
+        <div class="emp-name">${c.nom}</div>
+        <div class="emp-sub">${c.adresse} · <span class="${c.actif ? 'badge badge-green' : 'badge badge-red'}">${c.actif ? 'Actif' : 'Inactif'}</span></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick='openModalChan(${JSON.stringify(c)})'>✏</button>
+    </div>`).join('');
+}
+
+// ==========================================
+// MODALS
+// ==========================================
+function openModalPunch(r) {
+  document.getElementById('editPunchId').value = r.id;
+  const inD = new Date(r.punch_in);
+  const outD = r.punch_out ? new Date(r.punch_out) : null;
+  document.getElementById('editPunchDate').value = inD.toISOString().slice(0,10);
+  document.getElementById('editPunchIn').value  = inD.toTimeString().slice(0,5);
+  document.getElementById('editPunchOut').value = outD ? outD.toTimeString().slice(0,5) : '';
+  document.getElementById('editPunchNote').value = r.note || '';
+
+  const esel = document.getElementById('editPunchEmp');
+  const csel = document.getElementById('editPunchChan');
+  esel.innerHTML = employes.map(e => `<option value="${e.id}" ${e.id===r.employe_id?'selected':''}>${e.nom}</option>`).join('');
+  csel.innerHTML = chantiers.map(c => `<option value="${c.id}" ${c.id===r.chantier_id?'selected':''}>${c.nom}</option>`).join('');
+
+  openModal('modalPunch');
+}
+
+async function savePunch() {
+  const id   = document.getElementById('editPunchId').value;
+  const date = document.getElementById('editPunchDate').value;
+  const inT  = document.getElementById('editPunchIn').value;
+  const outT = document.getElementById('editPunchOut').value;
+  const note = document.getElementById('editPunchNote').value.trim();
+
+  const payload = {
+    employe_id:  document.getElementById('editPunchEmp').value,
+    chantier_id: document.getElementById('editPunchChan').value,
+    punch_in:    date + 'T' + inT + ':00',
+    punch_out:   outT ? date + 'T' + outT + ':00' : null,
+    modifie_par_admin: true,
+    note: note || null
+  };
+
+  try {
+    await sb('punches?id=eq.' + id, 'PATCH', payload);
+    showToast('✅ Pointage modifié!');
+    closeModal('modalPunch');
+    loadAdminToday();
+    const tab = document.getElementById('adminTab1').style.display;
+    if (tab !== 'none') loadHistory();
+  } catch(e) { showToast('Erreur: ' + e.message); }
+}
+
+async function deletePunch() {
+  if (!confirm('Supprimer ce pointage?')) return;
+  const id = document.getElementById('editPunchId').value;
+  try {
+    await sb('punches?id=eq.' + id, 'DELETE');
+    showToast('🗑 Pointage supprimé');
+    closeModal('modalPunch');
+    loadAdminToday();
+  } catch(e) { showToast('Erreur: ' + e.message); }
+}
+
+function openModalEmp(e) {
+  document.getElementById('modalEmpTitle').textContent = e ? 'Modifier employé' : 'Nouvel employé';
+  document.getElementById('editEmpId').value  = e ? e.id  : '';
+  document.getElementById('editEmpNom').value = e ? e.nom : '';
+  document.getElementById('editEmpTel').value = e ? (e.telephone || '') : '';
+  document.getElementById('deactivateEmpBtn').style.display = e ? 'flex' : 'none';
+  openModal('modalEmp');
+}
+
+async function saveEmp() {
+  const id  = document.getElementById('editEmpId').value;
+  const nom = document.getElementById('editEmpNom').value.trim();
+  const tel = document.getElementById('editEmpTel').value.trim();
+  if (!nom) { showToast('Entre un nom'); return; }
+  try {
+    if (id) await sb('employes?id=eq.' + id, 'PATCH', { nom, telephone: tel || null });
+    else    await sb('employes', 'POST', { nom, telephone: tel || null });
+    showToast('✅ Employé sauvegardé!');
+    closeModal('modalEmp');
+    loadAdminEmps();
+  } catch(e) { showToast('Erreur: ' + e.message); }
+}
+
+async function deactivateEmp() {
+  if (!confirm('Désactiver cet employé?')) return;
+  const id = document.getElementById('editEmpId').value;
+  await sb('employes?id=eq.' + id, 'PATCH', { actif: false });
+  showToast('Employé désactivé');
+  closeModal('modalEmp');
+  loadAdminEmps();
+}
+
+function openModalChan(c) {
+  document.getElementById('modalChanTitle').textContent = c ? 'Modifier chantier' : 'Nouveau chantier';
+  document.getElementById('editChanId').value      = c ? c.id      : '';
+  document.getElementById('editChanNom').value     = c ? c.nom     : '';
+  document.getElementById('editChanAdresse').value = c ? c.adresse : '';
+  document.getElementById('deactivateChanBtn').style.display = c ? 'flex' : 'none';
+  openModal('modalChan');
+}
+
+async function saveChan() {
+  const id  = document.getElementById('editChanId').value;
+  const nom = document.getElementById('editChanNom').value.trim();
+  const adr = document.getElementById('editChanAdresse').value.trim();
+  if (!nom || !adr) { showToast('Remplis tous les champs'); return; }
+  try {
+    if (id) await sb('chantiers?id=eq.' + id, 'PATCH', { nom, adresse: adr });
+    else    await sb('chantiers', 'POST', { nom, adresse: adr, ville: 'Montréal' });
+    showToast('✅ Chantier sauvegardé!');
+    closeModal('modalChan');
+    loadAdminChans();
+  } catch(e) { showToast('Erreur: ' + e.message); }
+}
+
+async function deactivateChan() {
+  if (!confirm('Désactiver ce chantier?')) return;
+  const id = document.getElementById('editChanId').value;
+  await sb('chantiers?id=eq.' + id, 'PATCH', { actif: false });
+  showToast('Chantier désactivé');
+  closeModal('modalChan');
+  loadAdminChans();
+}
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ==========================================
+// EXPORT CSV
+// ==========================================
+function exportCSV() { exportData([]); }
+function exportCSVHist() { exportData(historyData); }
+
+async function exportData(data) {
+  if (!data.length) {
+    const today = new Date().toISOString().slice(0, 10);
+    data = await sb(`punches?punch_in=gte.${today}T00:00:00&order=punch_in.desc&select=*,employes(nom),chantiers(nom)`).catch(()=>[]);
+  }
+  let csv = 'Employé,Chantier,Date,Arrivée,Départ,Heures,Modifié admin,Note\n';
+  data.forEach(r => {
+    const ms = r.punch_out ? (new Date(r.punch_out) - new Date(r.punch_in)) / 3600000 : 0;
+    csv += `"${r.employes?.nom||''}","${r.chantiers?.nom||''}","${r.punch_in?.slice(0,10)||''}","${fmt(new Date(r.punch_in))}","${r.punch_out ? fmt(new Date(r.punch_out)) : ''}","${ms.toFixed(2)}","${r.modifie_par_admin ? 'Oui' : 'Non'}","${r.note||''}"\n`;
+  });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = 'punch_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ==========================================
+// HELPERS
+// ==========================================
+function fmt(d) { return d.toLocaleTimeString('fr-CA', {hour:'2-digit', minute:'2-digit'}); }
+function fmtMs(ms) {
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  return h + 'h' + String(m).padStart(2, '0');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ==========================================
+// START
+// ==========================================
+init();
+</script>
+</body>
+</html>
